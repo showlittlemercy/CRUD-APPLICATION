@@ -1,19 +1,18 @@
 services:
   - type: web
-    name: crud‑app‑backend
+    runtime: node           # for your backend
+    name: crud-app-backend
     rootDir: backend
-    branch: main
     buildCommand: npm install
     startCommand: node server.js
     plan: free
     envVars:
-      - key: DB_HOST
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
       - key: FRONTEND_URL
         value: https://showlittlemercy.github.io/CRUD-APPLICATION/
+  - type: web
+    runtime: static         # if your frontend is a plain HTML/CSS/JS static site
+    name: crud-app-frontend
+    rootDir: frontend
+    buildCommand: ""        # no build if plain HTML/CSS/JS
+    staticPublishPath: .
+    plan: free
