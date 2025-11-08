@@ -1,4 +1,4 @@
-const apiBase = 'http://localhost:3000/api/records';
+const apiBase = 'https://crud-application-u6ak.onrender.com';
 
 const createForm = document.getElementById('createForm');
 const recordsTableBody = document.querySelector('#recordsTable tbody');
