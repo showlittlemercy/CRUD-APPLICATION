@@ -15,4 +15,5 @@ services:
     rootDir: frontend
     buildCommand: ""        # no build if plain HTML/CSS/JS
     staticPublishPath: .
-    plan: free
+    plan: starter
+
