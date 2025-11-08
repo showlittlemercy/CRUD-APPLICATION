@@ -14,7 +14,6 @@ function loadLocalRecords() {
     return [];
   }
 }
-
 function saveLocalRecords(records) {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(records));
@@ -22,15 +21,16 @@ function saveLocalRecords(records) {
     console.error('Error saving local data', e);
   }
 }
-
 function renderRecords(records = []) {
   recordsTableBody.innerHTML = '';
   records.forEach(rec => {
     const tr = document.createElement('tr');
+    // optionally mark a record as “pending” or “failed” if you want
+    const statusText = rec._sync === false ? ' (sync failed)' : '';
     tr.innerHTML = `
-      <td>${rec.name}</td>
-      <td>${rec.email}</td>
-      <td>${rec.age}</td>
+      <td>${rec.name}${statusText}</td>
+      <td>${rec.email}${statusText}</td>
+      <td>${rec.age}${statusText}</td>
       <td>
         <button class="edit-btn" data-id="${rec.id}">Edit</button>
         <button class="delete-btn" data-id="${rec.id}">Delete</button>
@@ -40,33 +40,11 @@ function renderRecords(records = []) {
   });
 }
 
-async function fetchRecordsFromServer() {
-  try {
-    const res = await fetch(apiBase + '?_=' + new Date().getTime(), {
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const result = await res.json();
-      const records = Array.isArray(result) ? result : (result.data || result.records || []);
-      saveLocalRecords(records);
-      renderRecords(records);
-    } else {
-      console.error('Server fetch error', res.status, res.statusText);
-    }
-  } catch (err) {
-    console.error('Error fetching server records', err);
-    const local = loadLocalRecords();
-    console.log('Falling back to local records:', local);
-    renderRecords(local);
-  }
-}
-
+// On page load
 document.addEventListener('DOMContentLoaded', () => {
-  // load local first
   const local = loadLocalRecords();
   renderRecords(local);
-  // then fetch from server
-  fetchRecordsFromServer();
+  // you can also trigger a retry/sync for failed items here if you want
 });
 
 createForm.addEventListener('submit', async function(event) {
@@ -76,87 +54,47 @@ createForm.addEventListener('submit', async function(event) {
   const age = this.age.value.trim();
 
   if (name && email && age) {
-    const newRec = { name, email, age };
+    // 1. Create the record locally (UI + localStorage) immediately
+    const localArr = loadLocalRecords();
+    const tempId = 'temp_' + Date.now();
+    const newRec = {
+      id: tempId,
+      name,
+      email,
+      age,
+      _sync: false  // mark as not yet synced
+    };
+    localArr.push(newRec);
+    saveLocalRecords(localArr);
+    renderRecords(localArr);
+    this.reset();
 
+    // 2. Now send to backend
     try {
       const res = await fetch(apiBase, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRec)
+        headers: { 'Content‑Type': 'application/json' },
+        body: JSON.stringify({ name, email, age })
       });
       if (res.ok) {
         const data = await res.json();
-        console.log('Created server record:', data);
-        // use the returned record (with id) or fallback to newRec with a temp id
-        const created = data.id ? data : { ...newRec, id: Date.now() };
-
-        const localArr = loadLocalRecords();
-        localArr.push(created);
-        saveLocalRecords(localArr);
-        renderRecords(localArr);
-        createForm.reset();
+        console.log('Created on server:', data);
+        // replace the temp record with the server record
+        const updatedArr = loadLocalRecords().map(rec => {
+          if (rec.id === tempId) {
+            return { ...data, _sync: true };
+          }
+          return rec;
+        });
+        saveLocalRecords(updatedArr);
+        renderRecords(updatedArr);
       } else {
         console.error('Server create failed', res.status, res.statusText);
+        // you might want to leave the _sync:false and show a message
       }
     } catch (err) {
       console.error('Error creating on server', err);
-    }
-  }
-});
-
-recordsTableBody.addEventListener('click', async function(event) {
-  const target = event.target;
-  if (target.matches('.delete-btn')) {
-    const id = target.getAttribute('data-id');
-    if (!id) return;
-    if (confirm('Are you sure you want to delete this record?')) {
-      try {
-        const res = await fetch(`${apiBase}/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          console.log('Deleted on server');
-        } else {
-          console.error('Server delete failed', res.status, res.statusText);
-        }
-      } catch (err) {
-        console.error('Error deleting on server', err);
-      }
-      let localArr = loadLocalRecords();
-      localArr = localArr.filter(r => String(r.id) !== String(id));
-      saveLocalRecords(localArr);
-      renderRecords(localArr);
-    }
-  } else if (target.matches('.edit-btn')) {
-    const id = target.getAttribute('data-id');
-    if (!id) return;
-    const newName = prompt('Edit name:', '');
-    const newEmail = prompt('Edit email:', '');
-    const newAge = prompt('Edit age:', '');
-
-    if (newName != null && newEmail != null && newAge != null) {
-      try {
-        const res = await fetch(`${apiBase}/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName.trim(), email: newEmail.trim(), age: newAge.trim() })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          console.log('Updated on server', data);
-        } else {
-          console.error('Server update failed', res.status, res.statusText);
-        }
-      } catch (err) {
-        console.error('Error updating on server', err);
-      }
-      const localArr = loadLocalRecords();
-      const idx = localArr.findIndex(r => String(r.id) === String(id));
-      if (idx !== -1) {
-        localArr[idx].name = newName.trim();
-        localArr[idx].email = newEmail.trim();
-        localArr[idx].age = newAge.trim();
-        saveLocalRecords(localArr);
-        renderRecords(localArr);
-      }
+      // leave as _sync:false so user knows it wasn’t synced
     }
   }
 });
