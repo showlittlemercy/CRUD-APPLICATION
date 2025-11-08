@@ -1,0 +1,33 @@
+# render.yaml — infrastructure as code for your CRUD app
+services:
+  - type: web
+    name: crud‑app‑backend
+    env: node
+    rootDir: backend
+    branch: main
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: FRONTEND_URL
+        value: https://showlittlemercy.github.io/CRUD‑APPLICATION/
+  - type: static
+    name: crud‑app‑frontend
+    rootDir: frontend
+    branch: main
+    plan: free
+    buildCommand: ""  # (if just HTML/CSS/JS) or e.g., npm install && npm run build
+    staticPublishPath: .
+    envVars: []
+
+# Note: Render currently only supports Postgres natively in 'databases:' section.
+# For MySQL you may create a private service or use an external MySQL provider.
+
