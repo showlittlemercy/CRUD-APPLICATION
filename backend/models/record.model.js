@@ -1,80 +1,76 @@
-const sql = require('../config/db.config.js');
+// models/record.model.js
+const db = require('../config/db.config.js');
 
-const Record = function (record) {
-    this.name = record.name;
-    this.email = record.email;
-    this.age = record.age;
+const Record = function(record) {
+  this.name  = record.name;
+  this.email = record.email;
+  this.age   = record.age;
 };
 
-Record.create = (newRecord, result) => {
-    sql.query("INSERT INTO records SET ?", newRecord, (err, res) => {
-        if (err) {
-            console.error("error: ", err);
-            result(err, null);
-            return;
-        }
-        result(null, { id: res.insertId, ...newRecord });
-    });
+Record.create = async (newRecord, result) => {
+  try {
+    const [res] = await db.query("INSERT INTO records SET ?", newRecord);
+    // res.insertId is available
+    result(null, { id: res.insertId, ...newRecord });
+  } catch (err) {
+    console.error("Error in Record.create:", err);
+    result(err, null);
+  }
 };
 
-Record.getAll = result => {
-    sql.query("SELECT * FROM records", (err, res) => {
-        if (err) {
-            console.error("error: ", err);
-            result(null, err);
-            return;
-        }
-        result(null, res);
-    });
+Record.getAll = async (result) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM records");
+    result(null, rows);
+  } catch (err) {
+    console.error("Error in Record.getAll:", err);
+    result(err, null);
+  }
 };
 
-Record.findById = (id, result) => {
-    sql.query(`SELECT * FROM records WHERE id = ${id}`, (err, res) => {
-        if (err) {
-            console.error("error: ", err);
-            result(err, null);
-            return;
-        }
-        if (res.length) {
-            result(null, res[0]);
-            return;
-        }
-        result({ kind: "not_found" }, null);
-    });
+Record.findById = async (id, result) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM records WHERE id = ?", [id]);
+    if (rows.length) {
+      result(null, rows[0]);
+    } else {
+      result({ kind: "not_found" }, null);
+    }
+  } catch (err) {
+    console.error("Error in Record.findById:", err);
+    result(err, null);
+  }
 };
 
-Record.updateById = (id, record, result) => {
-    sql.query(
-        "UPDATE records SET name = ?, email = ?, age = ? WHERE id = ?",
-        [record.name, record.email, record.age, id],
-        (err, res) => {
-            if (err) {
-                console.error("error: ", err);
-                result(null, err);
-                return;
-            }
-            if (res.affectedRows == 0) {
-                result({ kind: "not_found" }, null);
-                return;
-            }
-            result(null, { id: id, ...record });
-        }
+Record.updateById = async (id, record, result) => {
+  try {
+    const [res] = await db.query(
+      "UPDATE records SET name = ?, email = ?, age = ? WHERE id = ?",
+      [record.name, record.email, record.age, id]
     );
+    if (res.affectedRows == 0) {
+      result({ kind: "not_found" }, null);
+      return;
+    }
+    result(null, { id: id, ...record });
+  } catch (err) {
+    console.error("Error in Record.updateById:", err);
+    result(err, null);
+  }
 };
 
-Record.remove = (id, result) => {
-    sql.query("DELETE FROM records WHERE id = ?", id, (err, res) => {
-        if (err) {
-            console.error("error: ", err);
-            result(null, err);
-            return;
-        }
-        if (res.affectedRows == 0) {
-            result({ kind: "not_found" }, null);
-            return;
-        }
-        result(null, res);
-    });
+Record.remove = async (id, result) => {
+  try {
+    const [res] = await db.query("DELETE FROM records WHERE id = ?", [id]);
+    if (res.affectedRows == 0) {
+      result({ kind: "not_found" }, null);
+      return;
+    }
+    result(null, res);
+  } catch (err) {
+    console.error("Error in Record.remove:", err);
+    result(err, null);
+  }
 };
 
 module.exports = Record;
