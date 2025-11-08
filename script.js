@@ -14,6 +14,7 @@ function loadLocalRecords() {
     return [];
   }
 }
+
 function saveLocalRecords(records) {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(records));
@@ -39,14 +40,6 @@ function renderRecords(records = []) {
   });
 }
 
-// when page loads, load local first (so you see something immediately)
-document.addEventListener('DOMContentLoaded', () => {
-  const local = loadLocalRecords();
-  renderRecords(local);
-  // then fetch from API and overwrite local & UI
-  fetchRecordsFromServer();
-});
-
 async function fetchRecordsFromServer() {
   try {
     const res = await fetch(apiBase + '?_=' + new Date().getTime(), {
@@ -62,8 +55,19 @@ async function fetchRecordsFromServer() {
     }
   } catch (err) {
     console.error('Error fetching server records', err);
+    const local = loadLocalRecords();
+    console.log('Falling back to local records:', local);
+    renderRecords(local);
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  // load local first
+  const local = loadLocalRecords();
+  renderRecords(local);
+  // then fetch from server
+  fetchRecordsFromServer();
+});
 
 createForm.addEventListener('submit', async function(event) {
   event.preventDefault();
@@ -74,7 +78,6 @@ createForm.addEventListener('submit', async function(event) {
   if (name && email && age) {
     const newRec = { name, email, age };
 
-    // send to backend
     try {
       const res = await fetch(apiBase, {
         method: 'POST',
@@ -84,17 +87,13 @@ createForm.addEventListener('submit', async function(event) {
       if (res.ok) {
         const data = await res.json();
         console.log('Created server record:', data);
-        // assume returned `data` is the new record with `id`
-        const created = data;
+        // use the returned record (with id) or fallback to newRec with a temp id
+        const created = data.id ? data : { ...newRec, id: Date.now() };
 
-        // update local storage
-        const local = loadLocalRecords();
-        local.push(created);
-        saveLocalRecords(local);
-
-        // update UI
-        renderRecords(local);
-
+        const localArr = loadLocalRecords();
+        localArr.push(created);
+        saveLocalRecords(localArr);
+        renderRecords(localArr);
         createForm.reset();
       } else {
         console.error('Server create failed', res.status, res.statusText);
@@ -121,25 +120,24 @@ recordsTableBody.addEventListener('click', async function(event) {
       } catch (err) {
         console.error('Error deleting on server', err);
       }
-      // Also delete in local
-      let local = loadLocalRecords();
-      local = local.filter(r => String(r.id) !== String(id));
-      saveLocalRecords(local);
-      renderRecords(local);
+      let localArr = loadLocalRecords();
+      localArr = localArr.filter(r => String(r.id) !== String(id));
+      saveLocalRecords(localArr);
+      renderRecords(localArr);
     }
   } else if (target.matches('.edit-btn')) {
     const id = target.getAttribute('data-id');
     if (!id) return;
-    const newName = prompt('Edit name:');
-    const newEmail = prompt('Edit email:');
-    const newAge = prompt('Edit age:');
+    const newName = prompt('Edit name:', '');
+    const newEmail = prompt('Edit email:', '');
+    const newAge = prompt('Edit age:', '');
+
     if (newName != null && newEmail != null && newAge != null) {
-      // send to backend
       try {
         const res = await fetch(`${apiBase}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName, email: newEmail, age: newAge })
+          body: JSON.stringify({ name: newName.trim(), email: newEmail.trim(), age: newAge.trim() })
         });
         if (res.ok) {
           const data = await res.json();
@@ -150,15 +148,14 @@ recordsTableBody.addEventListener('click', async function(event) {
       } catch (err) {
         console.error('Error updating on server', err);
       }
-      // update local
-      const local = loadLocalRecords();
-      const idx = local.findIndex(r => String(r.id) === String(id));
+      const localArr = loadLocalRecords();
+      const idx = localArr.findIndex(r => String(r.id) === String(id));
       if (idx !== -1) {
-        local[idx].name = newName;
-        local[idx].email = newEmail;
-        local[idx].age = newAge;
-        saveLocalRecords(local);
-        renderRecords(local);
+        localArr[idx].name = newName.trim();
+        localArr[idx].email = newEmail.trim();
+        localArr[idx].age = newAge.trim();
+        saveLocalRecords(localArr);
+        renderRecords(localArr);
       }
     }
   }
