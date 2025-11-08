@@ -4,19 +4,27 @@ const cors = require("cors");
 
 const app = express();
 
-// allow requests from frontend (adjust origin if needed)
-const cors = require("cors");
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://showlittlemercy.github.io/CRUD-APPLICATION/"
+// allow requests from frontend (adjust origin via env var)
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://showlittlemercy.github.io/CRUD-APPLICATION/";
 
-// parse requests of content-type: application/json
+const corsOptions = {
+  origin: FRONTEND_URL,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // handle pre‑flight
+
+// parse requests of content‑type: application/json
 app.use(bodyParser.json());
 
-// parse requests of content-type: application/x-www-form-urlencoded
+// parse requests of content‑type: application/x‑www‑form‑urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // simple route
 app.get("/", (req, res) => {
-    res.json({ message: "Welcome to the CRUD App backend." });
+  res.json({ message: "Welcome to the CRUD App backend." });
 });
 
 // routes
@@ -24,7 +32,6 @@ require("./routes/record.routes")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}.`);
+  console.log(`Server is running on port ${PORT}.`);
 });
