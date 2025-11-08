@@ -1,19 +1,13 @@
 services:
   - type: web
-    runtime: node           # for your backend
+    runtime: node
     name: crud-app-backend
     rootDir: backend
+    branch: main
     buildCommand: npm install
     startCommand: node server.js
     plan: free
     envVars:
       - key: FRONTEND_URL
         value: https://showlittlemercy.github.io/CRUD-APPLICATION/
-  - type: web
-    runtime: static         # if your frontend is a plain HTML/CSS/JS static site
-    name: crud-app-frontend
-    rootDir: frontend
-    buildCommand: ""        # no build if plain HTML/CSS/JS
-    staticPublishPath: .
-    plan: starter
-
+      # other envVars...
