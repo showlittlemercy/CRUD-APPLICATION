@@ -1,8 +1,6 @@
-# render.yaml — Infrastructure as Code for CRUD Application
-
 services:
   - type: web
-    name: crud-app-backend
+    name: crud‑app‑backend
     rootDir: backend
     branch: main
     buildCommand: npm install
@@ -19,13 +17,3 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://showlittlemercy.github.io/CRUD-APPLICATION/
-      - key: PORT
-        value: 3000
-
-  - type: static
-    name: crud-app-frontend
-    rootDir: .
-    branch: main
-    buildCommand: ""           # No build step needed if only HTML/CSS/JS
-    staticPublishPath: .       # Publish the contents of repo root
-    plan: free
