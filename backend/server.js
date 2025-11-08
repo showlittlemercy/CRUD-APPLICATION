@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 
 // allow requests from frontend (adjust origin if needed)
-app.use(cors({ origin: 'http://localhost:5500' }));
+app.use(cors({ origin: 'https://crud-application-u6ak.onrender.com' }));
 
 // parse requests of content-type: application/json
 app.use(bodyParser.json());
