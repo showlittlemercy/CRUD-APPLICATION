@@ -8,8 +8,10 @@ async function fetchRecords() {
         const res = await fetch(apiBase + '?_=' + new Date().getTime(), {
             cache: 'no-store'
         });
-        const data = await res.json();
-        renderRecords(data);
+        const result = await res.json();
+        // Determine the array of records properly
+        const records = Array.isArray(result) ? result : (result.data || result.records || []);
+        renderRecords(records);
     } catch (err) {
         console.error('Error fetching records:', err);
     }
@@ -20,14 +22,14 @@ function renderRecords(records = []) {
     records.forEach((rec) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-      <td>${rec.name}</td>
-      <td>${rec.email}</td>
-      <td>${rec.age}</td>
-      <td>
-        <button onclick="onEdit(${rec.id})">Edit</button>
-        <button onclick="onDelete(${rec.id})">Delete</button>
-      </td>
-    `;
+          <td>${rec.name}</td>
+          <td>${rec.email}</td>
+          <td>${rec.age}</td>
+          <td>
+            <button onclick="onEdit(${rec.id})">Edit</button>
+            <button onclick="onDelete(${rec.id})">Delete</button>
+          </td>
+        `;
         recordsTableBody.appendChild(tr);
     });
 }
