@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 
 // FRONTEND_URL should match the origin exactly (protocol + domain + port if any).
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://showlittlemercy.github.io/CRUD-APPLICATION/";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://showlittlemercy.github.io";
 
 // Setup CORS options
 const corsOptions = {
