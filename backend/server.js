@@ -5,7 +5,8 @@ const cors = require("cors");
 const app = express();
 
 // allow requests from frontend (adjust origin if needed)
-app.use(cors({ origin: 'https://crud-application-1-e5w8.onrender.com' }));
+const cors = require("cors");
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://showlittlemercy.github.io/CRUD-APPLICATION/"
 
 // parse requests of content-type: application/json
 app.use(bodyParser.json());
