@@ -8,8 +8,11 @@ async function fetchRecords() {
         const res = await fetch(apiBase + '?_=' + new Date().getTime(), {
             cache: 'no-store'
         });
+        if (!res.ok) {
+            console.error('Network response not ok:', res.status, res.statusText);
+        }
         const result = await res.json();
-        // Determine the array of records properly
+        console.log("API response:", result);
         const records = Array.isArray(result) ? result : (result.data || result.records || []);
         renderRecords(records);
     } catch (err) {
@@ -19,6 +22,10 @@ async function fetchRecords() {
 
 function renderRecords(records = []) {
     recordsTableBody.innerHTML = '';
+    if (!Array.isArray(records)) {
+        console.error('renderRecords expects an array but got:', records);
+        return;
+    }
     records.forEach((rec) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -47,6 +54,9 @@ createForm.addEventListener('submit', async function (event) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, age })
             });
+            if (!res.ok) {
+                console.error('Create record failed:', res.status, res.statusText);
+            }
             const data = await res.json();
             console.log('Created:', data);
             createForm.reset();
@@ -68,6 +78,9 @@ window.onEdit = async function (id) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newName, email: newEmail, age: newAge })
             });
+            if (!res.ok) {
+                console.error('Update record failed:', res.status, res.statusText);
+            }
             const data = await res.json();
             console.log('Updated:', data);
             fetchRecords();
@@ -83,6 +96,9 @@ window.onDelete = async function (id) {
             const res = await fetch(`${apiBase}/${id}`, {
                 method: 'DELETE'
             });
+            if (!res.ok) {
+                console.error('Delete record failed:', res.status, res.statusText);
+            }
             const data = await res.json();
             console.log('Deleted:', data);
             fetchRecords();
